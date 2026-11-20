@@ -18,7 +18,7 @@ pub struct Conversation {
     pub last_message_at: DateTime<Utc>,
     pub created_at: DateTime<Utc>,
 }
-
+ 
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct Message {
     pub id: Uuid,
