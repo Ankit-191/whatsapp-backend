@@ -5,7 +5,7 @@ WORKDIR /usr/src/app
 COPY Cargo.toml Cargo.lock ./
 # Prebuild dependencies cache
 RUN mkdir src && echo "fn main() {}" > src/main.rs && cargo build --release && rm -rf src
-
+ 
 # Copy real sources
 COPY src ./src
 COPY knowledge ./knowledge
