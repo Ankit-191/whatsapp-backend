@@ -26,3 +26,4 @@ ENV KNOWLEDGE_DIR=/app/knowledge
 EXPOSE 8080
 
 CMD ["/app/whatsapp-backend"]
+
