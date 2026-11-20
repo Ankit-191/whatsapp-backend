@@ -1,0 +1,15 @@
+# Rust
+whatsapp-backend/target/
+whatsapp-backend/.env
+
+# Node & Next.js
+whatsapp-frontend/node_modules/
+whatsapp-frontend/.next/
+whatsapp-frontend/.env.local
+whatsapp-frontend/.env*.local
+
+# OS & IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
