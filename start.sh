@@ -9,3 +9,4 @@ sleep 2
 echo "Starting Rust Backend..."
 cd /app
 exec /app/whatsapp-backend
+

@@ -27,15 +27,13 @@ function getBotReply(customerName, incomingText) {
   const query = (incomingText || '').toLowerCase().trim();
 
   if (query.includes('hi') || query.includes('hello') || query.includes('hey') || query === 'start' || query === 'menu') {
-    return `👋 *Hello ${customerName || 'Valued Customer'}!*\n\nWelcome to *Radial Code Support* 🚀\nWe provide modern web development, mobile apps, and industry-ready tech training.\n\n*How can we help you today?*\n1️⃣ Reply *1* or *Services* - View Software & Web Services\n2️⃣ Reply *2* or *Courses* - View Training & Certification Courses\n3️⃣ Reply *3* or *Contact* - Get Address, Phone & Support Email\n4️⃣ Reply *4* or *Careers* - Current Job & Internship Openings\n\n_Type any keyword or number to continue._`;
+    return `👋 *Hello ${customerName || 'Valued Customer'}!*\n\nWelcome to *Radial Code Support* 🚀\nWe provide modern web development, mobile apps, and industry-ready tech training.\n\n*How can we help you today?*\n1️⃣ Reply *1* or *Services* - View Software & Web Services\n2️⃣ Reply *2* or *Courses* - View Training & Certification Courses\n3️⃣ Reply *3* or *Contact* - Get Address, Phone & Support Email\n\n_Type any keyword or number to continue._`;
   } else if (query.includes('1') || query.includes('service')) {
     return `🛠️ *Radial Code - Our Core Services:*\n\n1. *Custom Web Development:* Next.js, React, Node.js, Rust microservices.\n2. *Mobile App Development:* Android & iOS apps with Flutter & React Native.\n3. *UI/UX Design:* Figma prototypes and modern user experiences.\n4. *Cloud & DevOps:* AWS, Docker, Kubernetes & CI/CD deployment automation.\n5. *AI & Automation:* WhatsApp bots, conversational AI, and internal workflow automation.\n\n💬 Reply with *Contact* to get a free project quotation!`;
   } else if (query.includes('2') || query.includes('course') || query.includes('learn') || query.includes('training')) {
     return `🎓 *Radial Code - Tech Training & Certifications:*\n\n• *Full-Stack Web Development:* React, Next.js, Node.js, PostgreSQL (Duration: 4 Months)\n• *Python, AI & Data Science:* Python, Pandas, Machine Learning & LLM APIs (Duration: 3 Months)\n• *Mobile App Development:* Flutter & Native integrations (Duration: 3 Months)\n• *Cloud & DevOps Essentials:* Docker, Linux, CI/CD pipelines & AWS (Duration: 2 Months)\n\n📌 *Key Highlights:* Live projects, 1-on-1 mentorship, and placement assistance.\n💬 Reply with *Contact* to talk with our career counsellor!`;
   } else if (query.includes('3') || query.includes('contact') || query.includes('call') || query.includes('address') || query.includes('support')) {
     return `📞 *Radial Code - Contact Information:*\n\n📍 *Office:* Tech Park, Phase 1, Sector 62\n📧 *Email:* contact@radialcode.com\n🌐 *Website:* https://radialcode.com\n⏰ *Working Hours:* Monday – Friday: 9:00 AM – 6:00 PM IST\n\nAn agent will also connect with you here shortly if you need personal assistance!`;
-  } else if (query.includes('4') || query.includes('career') || query.includes('job') || query.includes('intern')) {
-    return `💼 *Careers at Radial Code:*\n\nWe are actively hiring:\n• Junior / Senior Full-Stack Developers (React / Node / Rust)\n• UI/UX Designers\n• Technical Interns (Frontend & Backend)\n\n📧 Send your CV/Portfolio to: *careers@radialcode.com*\nSubject format: _Job Application - [Your Role]_`;
   } else {
     return `Thank you for contacting Radial Code! 😊\n\nI couldn't quite find an exact answer for \"${incomingText}\".\n\n*Quick Navigation:*\n• Reply *1* for *Services*\n• Reply *2* for *Courses*\n• Reply *3* for *Contact Info*\n\nOur support team has been notified and an agent will reply to you here shortly.`;
   }
@@ -161,7 +159,7 @@ async function startWhatsAppBridge() {
         // Ignore group chats
         if (msg.key.remoteJid.endsWith('@g.us')) continue;
 
-        let remoteJid = msg.key.remoteJid;
+        const remoteJid = msg.key.remoteJid;
         
         // WhatsApp LID Fix: If remoteJid is an internal LID (e.g. @lid), extract the real phone number
         let phoneJid = remoteJid;

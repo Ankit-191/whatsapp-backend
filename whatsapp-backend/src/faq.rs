@@ -153,23 +153,6 @@ impl FaqEngine {
             };
         }
 
-        // 6. CAREERS & HIRING
-        if q.contains("career")
-            || q.contains("job")
-            || q.contains("hiring")
-            || q.contains("internship")
-            || q.contains("vacancy")
-            || q.contains("opening")
-            || q.contains("apply")
-            || q.contains("work with you")
-        {
-            return BotReply {
-                header: None,
-                text: "💼 *Careers at RadialCode:*\n\nWe are always looking for passionate builders!\n*Typical Open Roles:*\n- Frontend Developer (React / Next.js)\n- Backend Developer (Node.js / Python / Rust)\n- WordPress / CMS Specialist\n- UI/UX Product Designer\n\n*Perks:* Remote & hybrid flexibility, continuous learning, and top gear.\n\n✉️ Send your resume to *contact@radialcode.com* or apply at https://www.radialcode.com/careers".to_string(),
-                is_interactive_menu: false,
-                buttons: vec![],
-            };
-        }
 
         // 7. PORTFOLIO & WORK
         if q.contains("portfolio")
