@@ -15,12 +15,13 @@ RUN touch src/main.rs && cargo build --release
 # Final runtime image using Debian Bookworm
 FROM debian:bookworm-slim
 
-# Install system dependencies + Node.js runtime for WhatsApp Bridge
+# Copy official Node.js 20+ runtime directly from official Node image
+COPY --from=node:20-bookworm-slim /usr/local /usr/local
+
+# Install ca-certificates and curl
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
     curl \
-    nodejs \
-    npm \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -30,7 +31,7 @@ COPY --from=builder /usr/src/app/target/release/whatsapp-backend /app/whatsapp-b
 COPY --from=builder /usr/src/app/knowledge /app/knowledge
 COPY --from=builder /usr/src/app/migrations /app/migrations
 
-# 2. Copy and setup WhatsApp Bridge
+# 2. Copy and setup WhatsApp Bridge with Node 20
 COPY whatsapp-bridge /app/whatsapp-bridge
 RUN cd /app/whatsapp-bridge && npm install --omit=dev
 
