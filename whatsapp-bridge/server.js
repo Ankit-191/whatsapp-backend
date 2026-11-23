@@ -161,8 +161,21 @@ async function startWhatsAppBridge() {
         // Ignore group chats
         if (msg.key.remoteJid.endsWith('@g.us')) continue;
 
-        const remoteJid = msg.key.remoteJid;
-        const senderNumber = remoteJid.replace('@s.whatsapp.net', '').replace(/[^0-9]/g, '');
+        let remoteJid = msg.key.remoteJid;
+        
+        // WhatsApp LID Fix: If remoteJid is an internal LID (e.g. @lid), extract the real phone number
+        let phoneJid = remoteJid;
+        if (remoteJid.endsWith('@lid')) {
+          if (msg.key.remoteJidAlt && msg.key.remoteJidAlt.endsWith('@s.whatsapp.net')) {
+            phoneJid = msg.key.remoteJidAlt;
+          } else if (msg.key.participant && msg.key.participant.endsWith('@s.whatsapp.net')) {
+            phoneJid = msg.key.participant;
+          } else if (msg.key.participantAlt && msg.key.participantAlt.endsWith('@s.whatsapp.net')) {
+            phoneJid = msg.key.participantAlt;
+          }
+        }
+
+        const senderNumber = phoneJid.replace('@s.whatsapp.net', '').replace('@lid', '').replace(/[^0-9]/g, '');
         const customerName = msg.pushName || 'Customer';
 
         // Extract message text
