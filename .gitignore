@@ -7,6 +7,8 @@ whatsapp-frontend/node_modules/
 whatsapp-frontend/.next/
 whatsapp-frontend/.env.local
 whatsapp-frontend/.env*.local
+whatsapp-bridge/node_modules/
+whatsapp-bridge/auth_info_baileys/
 
 # OS & IDE
 .DS_Store

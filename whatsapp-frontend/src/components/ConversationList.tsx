@@ -47,7 +47,7 @@ export default function ConversationList({
   };
 
   return (
-    <div className="w-80 md:w-96 flex flex-col h-full bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 shrink-0">
+    <div className="w-full md:w-80 lg:w-96 flex flex-col h-full bg-white dark:bg-zinc-900 border-r border-zinc-200 dark:border-zinc-800 shrink-0">
       {/* Header & Search */}
       <div className="p-4 border-b border-zinc-200 dark:border-zinc-800">
         <div className="flex items-center justify-between mb-3">

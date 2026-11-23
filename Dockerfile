@@ -1,4 +1,4 @@
-# Multi-stage Docker build for Rust backend (from repository root)
+# Multi-stage Docker build for Combined Rust Backend + WhatsApp QR Bridge
 FROM rust:bookworm as builder
 
 WORKDIR /usr/src/app
@@ -12,18 +12,34 @@ COPY whatsapp-backend/knowledge ./knowledge
 COPY whatsapp-backend/migrations ./migrations
 RUN touch src/main.rs && cargo build --release
 
-# Final runtime image using Debian Bookworm (active stable release)
+# Final runtime image using Debian Bookworm
 FROM debian:bookworm-slim
-RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl && rm -rf /var/lib/apt/lists/*
+
+# Install system dependencies + Node.js runtime for WhatsApp Bridge
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    nodejs \
+    npm \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
+
+# 1. Copy compiled Rust backend & resources
 COPY --from=builder /usr/src/app/target/release/whatsapp-backend /app/whatsapp-backend
 COPY --from=builder /usr/src/app/knowledge /app/knowledge
 COPY --from=builder /usr/src/app/migrations /app/migrations
 
+# 2. Copy and setup WhatsApp Bridge
+COPY whatsapp-bridge /app/whatsapp-bridge
+RUN cd /app/whatsapp-bridge && npm install --omit=dev
+
+# 3. Setup startup script
+COPY start.sh /app/start.sh
+RUN chmod +x /app/start.sh
+
 ENV PORT=8080
 ENV KNOWLEDGE_DIR=/app/knowledge
-EXPOSE 8080
+EXPOSE 8080 3001
 
-CMD ["/app/whatsapp-backend"]
-
+CMD ["/app/start.sh"]

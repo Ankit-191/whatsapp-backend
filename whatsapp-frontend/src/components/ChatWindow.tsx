@@ -9,6 +9,7 @@ interface ChatWindowProps {
   messages: Message[];
   isLoadingMessages: boolean;
   onMessageSent: (newMsg: Message) => void;
+  onBack?: () => void;
 }
 
 export default function ChatWindow({
@@ -16,6 +17,7 @@ export default function ChatWindow({
   messages,
   isLoadingMessages,
   onMessageSent,
+  onBack,
 }: ChatWindowProps) {
   const [inputText, setInputText] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -102,9 +104,21 @@ export default function ChatWindow({
   return (
     <div className="flex-1 flex flex-col h-full bg-zinc-50 dark:bg-zinc-950">
       {/* Chat Header */}
-      <div className="h-16 px-6 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between shrink-0 shadow-xs">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-700 flex items-center justify-center text-white font-bold text-sm shadow-xs">
+      <div className="h-16 px-4 sm:px-6 bg-white dark:bg-zinc-900 border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between shrink-0 shadow-xs">
+        <div className="flex items-center space-x-2 sm:space-x-3 overflow-hidden">
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="md:hidden p-1.5 -ml-1 text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors shrink-0"
+              title="Back to inbox"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+          )}
+
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-br from-emerald-500 to-teal-700 flex items-center justify-center text-white font-bold text-xs sm:text-sm shadow-xs shrink-0">
             {conversation.customer_name ? (
               conversation.customer_name.charAt(0).toUpperCase()
             ) : (

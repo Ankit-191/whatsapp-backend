@@ -75,6 +75,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             "/api/knowledge",
             get(routes::conversations::get_knowledge),
         )
+        // WhatsApp QR Bridge Proxy
+        .route("/api/bridge/status", get(routes::bridge::get_bridge_status))
+        .route("/api/bridge/send", axum::routing::post(routes::bridge::bridge_send))
         // Live WebSocket
         .route("/ws", get(routes::ws::ws_handler))
         .layer(cors)

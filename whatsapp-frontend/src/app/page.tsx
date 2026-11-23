@@ -6,6 +6,7 @@ import ConversationList from '@/components/ConversationList';
 import ChatWindow from '@/components/ChatWindow';
 import KnowledgeModal from '@/components/KnowledgeModal';
 import SimulateModal from '@/components/SimulateModal';
+import QrScanModal from '@/components/QrScanModal';
 import { Conversation, Message } from '@/types';
 import { fetchConversations, fetchMessages, subscribeToSupportStream } from '@/lib/api';
 
@@ -18,6 +19,7 @@ export default function Home() {
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [isKnowledgeOpen, setIsKnowledgeOpen] = useState(false);
   const [isSimulateOpen, setIsSimulateOpen] = useState(false);
+  const [isQrScanOpen, setIsQrScanOpen] = useState(false);
 
   // Load conversations list
   const loadConversations = useCallback(async () => {
@@ -118,24 +120,30 @@ export default function Home() {
         isConnected={isConnected}
         onOpenKnowledge={() => setIsKnowledgeOpen(true)}
         onOpenSimulate={() => setIsSimulateOpen(true)}
+        onOpenScanQr={() => setIsQrScanOpen(true)}
       />
 
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar: Inbox conversations */}
-        <ConversationList
-          conversations={conversations}
-          selectedId={selectedConversation?.id}
-          onSelect={handleSelectConversation}
-          isLoading={isLoadingConversations}
-        />
+        {/* Left Sidebar: Inbox conversations (full-width on mobile when no chat selected) */}
+        <div className={`h-full ${selectedConversation ? 'hidden md:flex' : 'flex'} w-full md:w-auto shrink-0`}>
+          <ConversationList
+            conversations={conversations}
+            selectedId={selectedConversation?.id}
+            onSelect={handleSelectConversation}
+            isLoading={isLoadingConversations}
+          />
+        </div>
 
-        {/* Center / Right: Chat thread */}
-        <ChatWindow
-          conversation={selectedConversation}
-          messages={messages}
-          isLoadingMessages={isLoadingMessages}
-          onMessageSent={handleMessageSent}
-        />
+        {/* Center / Right: Chat thread (full-width on mobile when chat selected) */}
+        <div className={`h-full flex-1 ${selectedConversation ? 'flex' : 'hidden md:flex'} w-full overflow-hidden`}>
+          <ChatWindow
+            conversation={selectedConversation}
+            messages={messages}
+            isLoadingMessages={isLoadingMessages}
+            onMessageSent={handleMessageSent}
+            onBack={() => setSelectedConversation(null)}
+          />
+        </div>
       </div>
 
       {/* Knowledge Modal */}
@@ -154,6 +162,12 @@ export default function Home() {
             loadMessages(selectedConversation.id);
           }
         }}
+      />
+
+      {/* WhatsApp QR Scanner Modal */}
+      <QrScanModal
+        isOpen={isQrScanOpen}
+        onClose={() => setIsQrScanOpen(false)}
       />
     </div>
   );
