@@ -62,12 +62,12 @@ impl FaqEngine {
         {
             return BotReply {
                 header: Some("RadialCode Support".to_string()),
-                text: "Hello! Welcome to RadialCode 👋\nWe specialize in Custom Web & App Development, UI/UX Design, and Professional Tech Training.\n\nPlease select an option below or type your question:".to_string(),
+                text: "Hello! Welcome to RadialCode 👋\nWe specialize in Custom Web & App Development, UI/UX Design, and Professional Tech Training.\n\nPlease select an option below or type your question:\n1️⃣ Reply *1* or *Services* - Web & Software Services\n2️⃣ Reply *2* or *Courses* - Training & Certifications\n3️⃣ Reply *3* or *Contact* - Phone, Email & Address\n4️⃣ Reply *4* or *Careers* - Job Openings & Hiring".to_string(),
                 is_interactive_menu: true,
                 buttons: vec![
-                    ("btn_services".to_string(), "🛠 Our Services".to_string()),
-                    ("btn_courses".to_string(), "🎓 Learn Courses".to_string()),
-                    ("btn_contact".to_string(), "📞 Contact Us".to_string()),
+                    ("btn_services".to_string(), "🛠 Services".to_string()),
+                    ("btn_courses".to_string(), "🎓 Courses".to_string()),
+                    ("btn_contact".to_string(), "📞 Contact".to_string()),
                 ],
             };
         }
@@ -153,6 +153,26 @@ impl FaqEngine {
             };
         }
 
+
+        // 6. CAREERS & HIRING
+        if q == "btn_careers"
+            || q == "4"
+            || q.contains("career")
+            || q.contains("job")
+            || q.contains("hiring")
+            || q.contains("internship")
+            || q.contains("vacancy")
+            || q.contains("opening")
+            || q.contains("apply")
+            || q.contains("work with you")
+        {
+            return BotReply {
+                header: None,
+                text: "💼 *Careers at RadialCode:*\n\nWe are actively looking for passionate builders!\n\n*Typical Open Positions:*\n• *Frontend Developer:* React, Next.js, TailwindCSS\n• *Backend Developer:* Node.js, Python, Rust, APIs\n• *WordPress / Full-Stack:* Custom themes & Headless CMS\n• *UI/UX Designer:* Figma, design systems, wireframes\n• *Technical Interns:* Frontend & Backend development\n\n✨ *Perks:* Remote & hybrid flexibility, continuous learning, and top gear.\n\n📧 *Send CV/Portfolio to:* contact@radialcode.com\n🌐 *Apply Online:* https://www.radialcode.com/careers\n📝 *Subject Format:* Job Application - [Your Role]".to_string(),
+                is_interactive_menu: false,
+                buttons: vec![],
+            };
+        }
 
         // 7. PORTFOLIO & WORK
         if q.contains("portfolio")
