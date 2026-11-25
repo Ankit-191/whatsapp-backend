@@ -2,8 +2,11 @@ const {
   default: makeWASocket,
   useMultiFileAuthState,
   DisconnectReason,
-  fetchLatestBaileysVersion
+  fetchLatestBaileysVersion,
+  decryptPollVote,
+  jidNormalizedUser
 } = require('@whiskeysockets/baileys');
+const crypto = require('crypto');
 const pino = require('pino');
 const qrcodeTerminal = require('qrcode-terminal');
 const QRCode = require('qrcode');
@@ -22,12 +25,25 @@ let connectionStatus = 'initializing';
 let connectedUser = null;
 let sock = null;
 
+// Poll store for interactive clickable menu options
+const pollStore = new Map();
+
+function findOptionByHash(options, selectedHash) {
+  for (const opt of options) {
+    const hash = crypto.createHash('sha256').update(Buffer.from(opt)).digest();
+    if (Buffer.compare(hash, selectedHash) === 0) {
+      return opt;
+    }
+  }
+  return null;
+}
+
 // FAQ Engine for Radial Code
 function getBotReply(customerName, incomingText) {
   const query = (incomingText || '').toLowerCase().trim();
 
   if (query.includes('hi') || query.includes('hello') || query.includes('hey') || query === 'start' || query === 'menu') {
-    return `👋 *Hello ${customerName || 'Valued Customer'}!*\n\nWelcome to *Radial Code Support* 🚀\nWe provide modern web development, mobile apps, and industry-ready tech training.\n\n*How can we help you today?*\n1️⃣ Reply *1* or *Services* - View Software & Web Services\n2️⃣ Reply *2* or *Courses* - View Training & Certification Courses\n3️⃣ Reply *3* or *Contact* - Get Address, Phone & Support Email\n4️⃣ Reply *4* or *Careers* - Current Job Openings & Hiring\n\n_Type any keyword or number to continue._`;
+    return `👋 *Hello ${customerName || 'Valued Customer'}!*\n\nWelcome to *Radial Code Support* 🚀\nWe provide modern web development, mobile apps, and industry-ready tech training.\n\n*Please select an option below or type your question:*`;
   } else if (query.includes('1') || query.includes('service')) {
     return `🛠️ *Radial Code - Our Core Services:*\n\n1. *Custom Web Development:* Next.js, React, Node.js, Rust microservices.\n2. *Mobile App Development:* Android & iOS apps with Flutter & React Native.\n3. *UI/UX Design:* Figma prototypes and modern user experiences.\n4. *Cloud & DevOps:* AWS, Docker, Kubernetes & CI/CD deployment automation.\n5. *AI & Automation:* WhatsApp bots, conversational AI, and internal workflow automation.\n\n💬 Reply with *Contact* to get a free project quotation!`;
   } else if (query.includes('2') || query.includes('course') || query.includes('learn') || query.includes('training')) {
@@ -178,6 +194,47 @@ async function startWhatsAppBridge() {
         const senderNumber = phoneJid.replace('@s.whatsapp.net', '').replace('@lid', '').replace(/[^0-9]/g, '');
         const customerName = msg.pushName || 'Customer';
 
+        // Check for Interactive Poll Vote (Customer clicked an option button)
+        if (msg.message?.pollUpdateMessage) {
+          const pollUpdate = msg.message.pollUpdateMessage;
+          const pollId = pollUpdate.pollCreationMessageKey?.id;
+          const pollMeta = pollStore.get(pollId);
+
+          if (pollMeta && pollMeta.pollEncKey && pollUpdate.vote) {
+            try {
+              const meId = jidNormalizedUser(sock.user?.id || '');
+              const voterJid = jidNormalizedUser(remoteJid);
+
+              const voteMsg = decryptPollVote(pollUpdate.vote, {
+                pollEncKey: pollMeta.pollEncKey,
+                pollCreatorJid: meId,
+                pollMsgId: pollId,
+                voterJid: voterJid
+              });
+
+              if (voteMsg.selectedOptions && voteMsg.selectedOptions.length > 0) {
+                const selectedHash = Buffer.from(voteMsg.selectedOptions[0]);
+                const selectedOption = findOptionByHash(pollMeta.options, selectedHash);
+
+                if (selectedOption) {
+                  console.log(`\n🔘 Interactive Option Clicked by ${customerName} (${senderNumber}): "${selectedOption}"`);
+                  const reply = getBotReply(customerName, selectedOption);
+                  console.log(`🤖 Sending Auto-Reply to ${senderNumber}...`);
+
+                  await sock.sendMessage(remoteJid, { text: reply });
+                  console.log(`✅ Auto-Reply for button selection delivered to ${senderNumber}!`);
+
+                  syncToBackend(senderNumber, customerName, selectedOption, reply);
+                  continue;
+                }
+              }
+            } catch (err) {
+              console.error('Failed to decrypt interactive poll vote:', err);
+            }
+          }
+          continue;
+        }
+
         // Extract message text
         const text =
           msg.message?.conversation ||
@@ -197,6 +254,53 @@ async function startWhatsAppBridge() {
         // Send Reply via WhatsApp
         await sock.sendMessage(remoteJid, { text: reply });
         console.log(`✅ Reply delivered to ${senderNumber}!`);
+
+        // If user sent a greeting or menu trigger, send interactive clickable poll buttons
+        const queryLower = text.toLowerCase().trim();
+        const isGreeting =
+          queryLower === 'hi' ||
+          queryLower === 'hello' ||
+          queryLower === 'hey' ||
+          queryLower === 'start' ||
+          queryLower === 'menu' ||
+          queryLower === 'help' ||
+          queryLower === 'options' ||
+          queryLower.startsWith('hi ') ||
+          queryLower.startsWith('hello ') ||
+          queryLower.startsWith('hey ');
+
+        if (isGreeting) {
+          try {
+            const pollOptions = [
+              '🛠 1. Our Services',
+              '🎓 2. Learn Courses',
+              '📞 3. Contact Us',
+              '💼 4. Careers & Jobs'
+            ];
+
+            const sentPoll = await sock.sendMessage(remoteJid, {
+              poll: {
+                name: '🚀 Radial Code Support - Tap an option below:',
+                values: pollOptions,
+                selectableCount: 1
+              }
+            });
+
+            if (sentPoll && sentPoll.key?.id) {
+              const encKey = sentPoll.message?.messageContextInfo?.messageSecret;
+              if (encKey) {
+                pollStore.set(sentPoll.key.id, {
+                  pollEncKey: encKey,
+                  options: pollOptions,
+                  remoteJid: remoteJid,
+                  createdAt: Date.now()
+                });
+              }
+            }
+          } catch (pollErr) {
+            console.error('Failed to send interactive poll menu:', pollErr);
+          }
+        }
 
         // Sync with Backend / Neon DB / Next.js Live Chat
         syncToBackend(senderNumber, customerName, text, reply);
