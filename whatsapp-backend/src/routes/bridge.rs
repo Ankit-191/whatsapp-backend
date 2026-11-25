@@ -69,3 +69,25 @@ pub async fn bridge_send(Json(payload): Json<Value>) -> impl IntoResponse {
     }
 }
 
+/// Proxy GET /api/bridge/logs to internal WhatsApp Bridge (port 3001)
+pub async fn get_bridge_logs() -> impl IntoResponse {
+    let client = reqwest::Client::new();
+    match client
+        .get("http://127.0.0.1:3001/api/logs")
+        .timeout(std::time::Duration::from_secs(4))
+        .send()
+        .await
+    {
+        Ok(resp) => {
+            let text = resp.text().await.unwrap_or_default();
+            (StatusCode::OK, [("content-type", "text/plain")], text).into_response()
+        }
+        Err(e) => (
+            StatusCode::BAD_GATEWAY,
+            [("content-type", "text/plain")],
+            format!("Failed to reach bridge logs: {}", e),
+        )
+            .into_response(),
+    }
+}
+

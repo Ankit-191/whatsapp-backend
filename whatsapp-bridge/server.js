@@ -15,6 +15,30 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 
+// Circular in-memory log buffer for remote debugging via /api/logs
+const logsBuffer = [];
+const originalConsoleLog = console.log;
+const originalConsoleError = console.error;
+const originalConsoleWarn = console.warn;
+
+console.log = function (...args) {
+  logsBuffer.push(`[${new Date().toISOString()}] [LOG] ${args.join(' ')}`);
+  if (logsBuffer.length > 200) logsBuffer.shift();
+  originalConsoleLog.apply(console, args);
+};
+
+console.error = function (...args) {
+  logsBuffer.push(`[${new Date().toISOString()}] [ERR] ${args.join(' ')}`);
+  if (logsBuffer.length > 200) logsBuffer.shift();
+  originalConsoleError.apply(console, args);
+};
+
+console.warn = function (...args) {
+  logsBuffer.push(`[${new Date().toISOString()}] [WARN] ${args.join(' ')}`);
+  if (logsBuffer.length > 200) logsBuffer.shift();
+  originalConsoleWarn.apply(console, args);
+};
+
 const app = express();
 app.use(express.json());
 const PORT = process.env.BRIDGE_PORT || 3001;
@@ -43,7 +67,7 @@ function getBotReply(customerName, incomingText) {
   const query = (incomingText || '').toLowerCase().trim();
 
   if (query.includes('hi') || query.includes('hello') || query.includes('hey') || query === 'start' || query === 'menu') {
-    return `👋 *Hello ${customerName || 'Valued Customer'}!*\n\nWelcome to *Radial Code Support* 🚀\nWe provide modern web development, mobile apps, and industry-ready tech training.\n\n*Please select an option below or type your question:*`;
+    return `👋 *Hello ${customerName || 'Valued Customer'}!*\n\nWelcome to *Radial Code Support* 🚀\nWe provide modern web development, mobile apps, and industry-ready tech training.\n\n*How can we help you today?*\n1️⃣ Reply *1* or *Services* - View Software & Web Services\n2️⃣ Reply *2* or *Courses* - View Training & Certification Courses\n3️⃣ Reply *3* or *Contact* - Get Address, Phone & Support Email\n4️⃣ Reply *4* or *Careers* - Current Job Openings & Hiring\n\n_Tap an option from the menu or reply with a number/keyword._`;
   } else if (query.includes('1') || query.includes('service')) {
     return `🛠️ *Radial Code - Our Core Services:*\n\n1. *Custom Web Development:* Next.js, React, Node.js, Rust microservices.\n2. *Mobile App Development:* Android & iOS apps with Flutter & React Native.\n3. *UI/UX Design:* Figma prototypes and modern user experiences.\n4. *Cloud & DevOps:* AWS, Docker, Kubernetes & CI/CD deployment automation.\n5. *AI & Automation:* WhatsApp bots, conversational AI, and internal workflow automation.\n\n💬 Reply with *Contact* to get a free project quotation!`;
   } else if (query.includes('2') || query.includes('course') || query.includes('learn') || query.includes('training')) {
@@ -271,6 +295,8 @@ async function startWhatsAppBridge() {
 
         if (isGreeting) {
           try {
+            await new Promise((r) => setTimeout(r, 600));
+            console.log(`📊 Attempting to send interactive poll to ${remoteJid}...`);
             const pollOptions = [
               '🛠 1. Our Services',
               '🎓 2. Learn Courses',
@@ -278,13 +304,32 @@ async function startWhatsAppBridge() {
               '💼 4. Careers & Jobs'
             ];
 
-            const sentPoll = await sock.sendMessage(remoteJid, {
-              poll: {
-                name: '🚀 Radial Code Support - Tap an option below:',
-                values: pollOptions,
-                selectableCount: 1
+            let targetJid = remoteJid;
+            let sentPoll = null;
+
+            try {
+              sentPoll = await sock.sendMessage(targetJid, {
+                poll: {
+                  name: '📌 Radial Code Support - Tap an option below:',
+                  values: pollOptions,
+                  selectableCount: 1
+                }
+              });
+            } catch (firstErr) {
+              console.warn(`Primary poll send failed to ${targetJid}: ${firstErr?.message}`);
+              if (phoneJid && phoneJid !== remoteJid && phoneJid.endsWith('@s.whatsapp.net')) {
+                console.log(`Retrying poll send with resolved phoneJid ${phoneJid}...`);
+                sentPoll = await sock.sendMessage(phoneJid, {
+                  poll: {
+                    name: '📌 Radial Code Support - Tap an option below:',
+                    values: pollOptions,
+                    selectableCount: 1
+                  }
+                });
+              } else {
+                throw firstErr;
               }
-            });
+            }
 
             if (sentPoll && sentPoll.key?.id) {
               const encKey = sentPoll.message?.messageContextInfo?.messageSecret;
@@ -295,10 +340,11 @@ async function startWhatsAppBridge() {
                   remoteJid: remoteJid,
                   createdAt: Date.now()
                 });
+                console.log('✅ Poll message sent successfully, ID:', sentPoll.key.id);
               }
             }
           } catch (pollErr) {
-            console.error('Failed to send interactive poll menu:', pollErr);
+            console.error('Failed to send interactive poll menu:', pollErr?.message || pollErr);
           }
         }
 
@@ -312,6 +358,12 @@ async function startWhatsAppBridge() {
 }
 
 // JSON API for Next.js Dashboard to get QR Code and connection status
+app.get('/api/logs', (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  res.send(logsBuffer.join('\n') || 'No bridge logs yet.');
+});
+
 app.get('/api/status', async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
